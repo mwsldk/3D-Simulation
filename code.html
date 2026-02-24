@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Particle Hologramme</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #000; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
+
+        /* LAUNCHER SCREEN */
+        #launcher {
+            position: fixed; inset: 0;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center; gap: 20px;
+            background: radial-gradient(ellipse at center, #0a0a1a 0%, #000 100%);
+            z-index: 100;
+            transition: opacity 0.6s ease;
+        }
+        #launcher h1 {
+            color: white; font-size: 32px; font-weight: 300; letter-spacing: 6px;
+            text-transform: uppercase; opacity: 0.9;
+        }
+        #launcher p { color: rgba(255,255,255,0.4); font-size: 14px; letter-spacing: 1px; }
+        .launch-btn {
+            padding: 20px 50px; font-size: 18px; letter-spacing: 2px;
+            background: linear-gradient(135deg, rgba(100,149,255,0.15), rgba(150,100,255,0.15));
+            border: 1px solid rgba(100,149,255,0.4);
+            border-radius: 50px; color: white; cursor: pointer;
+            transition: all 0.3s; text-transform: uppercase;
+            box-shadow: 0 0 40px rgba(100,149,255,0.1);
+        }
+        .launch-btn:hover {
+            background: linear-gradient(135deg, rgba(100,149,255,0.3), rgba(150,100,255,0.3));
+            box-shadow: 0 0 60px rgba(100,149,255,0.3);
+            transform: scale(1.05);
+            border-color: rgba(100,149,255,0.7);
+        }
+        .stars {
+            position: fixed; inset: 0; pointer-events: none;
+            background-image:
+                radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.6), transparent),
+                radial-gradient(1px 1px at 80% 10%, rgba(255,255,255,0.4), transparent),
+                radial-gradient(1px 1px at 50% 70%, rgba(255,255,255,0.5), transparent),
+                radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.3), transparent),
+                radial-gradient(1px 1px at 90% 80%, rgba(255,255,255,0.5), transparent),
+                radial-gradient(1px 1px at 35% 90%, rgba(255,255,255,0.4), transparent);
+        }
+        #launcher.hidden { opacity: 0; pointer-events: none; }
+
+        /* HOLOGRAM SCREEN */
+        #hologram-screen { position: fixed; inset: 0; display: none; }
+        #hologram-screen.visible { display: block; }
+        canvas { display: block; }
+
+        /* CONTROLS */
+        #controls {
+            position: absolute; top: 15px; right: 15px;
+            background: rgba(20,20,30,0.85); backdrop-filter: blur(10px);
+            padding: 15px; border-radius: 20px; color: white; min-width: 200px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1);
+        }
+        #controls h3 { margin-top:0; margin-bottom:12px; font-size:14px; border-bottom:1px solid rgba(255,255,255,0.15); padding-bottom:8px; font-weight:600; }
+        #controls label { display:block; margin-bottom:6px; font-size:11px; color:#ccc; font-weight:500; }
+        #controls select, #controls input {
+            width:100%; padding:6px 10px; margin-top:4px; margin-bottom:10px;
+            background:rgba(40,40,50,0.6); border:1px solid rgba(255,255,255,0.15);
+            border-radius:12px; color:white; font-size:12px;
+        }
+        #controls input[type="range"] { cursor:pointer; padding:0; height:6px; border-radius:10px; background:linear-gradient(to right,rgba(100,150,255,0.3),rgba(150,100,255,0.3)); }
+        #controls input[type="range"]::-webkit-slider-thumb { appearance:none; width:14px; height:14px; border-radius:50%; background:linear-gradient(135deg,#6495ff,#9664ff); cursor:pointer; }
+        .value-display { float:right; color:#6495ff; font-weight:600; font-size:11px; }
+
+        /* BACK BUTTON */
+        #back-btn {
+            position: absolute; top: 15px; left: 15px;
+            padding: 10px 20px; background: rgba(20,20,30,0.85);
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
+            color: rgba(255,255,255,0.6); font-size: 13px; cursor: pointer;
+            backdrop-filter: blur(10px); transition: all 0.2s;
+        }
+        #back-btn:hover { color: white; border-color: rgba(255,255,255,0.3); }
+
+        /* GITHUB LINK */
+        .github-link {
+            color: rgba(255,255,255,0.8); text-decoration: none; font-size: 13px;
+            transition: all 0.2s; cursor: pointer; font-weight: 500;
+        }
+        .github-link:hover { color: white; }
+        #launcher .github-link {
+            margin-top: 20px; font-size: 13px;
+        }
+        #github-corner {
+            position: absolute; bottom: 15px; right: 15px;
+            background: rgba(20,20,30,0.85); backdrop-filter: blur(10px);
+            padding: 12px 18px; border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- LAUNCHER -->
+    <div id="launcher">
+        <div class="stars"></div>
+        <h1>✦ Space ✦</h1>
+        <p>Interactive 3d Particle Simulation</p>
+        <button class="launch-btn" onclick="launchHologram()">🪐 &nbsp; START</button>
+        <a href="https://github.com/mwsldk" target="_blank" class="github-link">github.com/mwsldk</a>
+    </div>
+
+    <!-- HOLOGRAM -->
+    <div id="hologram-screen">
+        <div id="controls">
+            <h3>🎮 Controls</h3>
+            <label>Template
+                <select id="template">
+                    <option value="saturn"> Saturn</option>
+                    <option value="blackhole"> Black Hole</option>
+                    <option value="sun"> Sun</option>
+                </select>
+            </label>
+            <label>Particle Speed <span class="value-display" id="scaleValue">1.0</span>
+                <input type="range" id="particleScale" min="0.5" max="2" step="0.1" value="1.0">
+            </label>
+            <label>Rotation Speed <span class="value-display" id="speedValue">1.0</span>
+                <input type="range" id="rotationSpeed" min="0" max="3" step="0.1" value="1.0">
+            </label>
+        </div>
+        <button id="back-btn" onclick="goBack()">← Back</button>
+        <div id="github-corner">
+            <a href="https://github.com/mwsldk" target="_blank" class="github-link"> made by Mwsldk</a>
+        </div>
+    </div>
+
+    <script src="three.min.js"></script>
+    <script>
+        const PARTICLE_COUNT = 120000;
+        let geometry, material, particles, scene, camera, renderer;
+        const cfg = { template: 'saturn', particleScale: 1.0, rotationSpeed: 1.0 };
+        let isDragging = false, previousMousePosition = {x:0,y:0};
+        let rotationX = 0.3, rotationY = 0, velocityX = 0, velocityY = 0, cameraRadius = 45;
+        let animating = false;
+        let asteroidRotations = [];
+
+        function launchHologram() {
+            const launcher = document.getElementById('launcher');
+            const screen   = document.getElementById('hologram-screen');
+            launcher.classList.add('hidden');
+            setTimeout(() => {
+                screen.classList.add('visible');
+                if (!renderer) {
+                    initScene();
+                    setupUI();
+                    setupMouseControls();
+                    createParticleSystem(cfg.template);
+                }
+                if (!animating) { animating = true; animate(); }
+            }, 600);
+        }
+
+        function goBack() {
+            document.getElementById('hologram-screen').classList.remove('visible');
+            const launcher = document.getElementById('launcher');
+            launcher.classList.remove('hidden');
+        }
+
+        function generateTemplatePositions(type) {
+            const positions = new Float32Array(PARTICLE_COUNT * 3);
+            const colors    = new Float32Array(PARTICLE_COUNT * 3);
+            for (let i = 0; i < PARTICLE_COUNT; i++) {
+                const i3 = i * 3;
+                let x=0,y=0,z=0,r=0,g=0,b=0;
+
+                if (type === 'saturn') {
+                    if (i < PARTICLE_COUNT * 0.65) {
+                        const radius = 9 + Math.random()*2;
+                        const theta  = Math.random()*Math.PI*2;
+                        const phi    = Math.acos(2*Math.random()-1);
+                        x = radius*Math.sin(phi)*Math.cos(theta);
+                        y = radius*Math.sin(phi)*Math.sin(theta);
+                        z = radius*Math.cos(phi);
+                        const bv = Math.sin(Math.abs(y/radius)*20)*0.08;
+                        r=0.95+bv; g=0.85+bv; b=0.65+bv;
+                    } else {
+                        const ri=13, ro=22;
+                        let radius = ri + Math.random()*(ro-ri);
+                        const angle = Math.random()*Math.PI*2;
+                        if (radius>17&&radius<18&&Math.random()>0.3)
+                            radius = Math.random()>0.5 ? ri+Math.random()*(17-ri) : 18+Math.random()*(ro-18);
+                        x=Math.cos(angle)*radius; z=Math.sin(angle)*radius; y=(Math.random()-0.5)*0.3;
+                        const df=(radius-ri)/(ro-ri);
+                        r=0.75+df*0.15; g=0.70+df*0.10; b=0.55+df*0.10;
+                    }
+
+                } else if (type === 'blackhole') {
+                    const rand = Math.random();
+                    if (rand < 0.55) {
+                        const dr = 4.5+Math.pow(Math.random(),0.5)*18;
+                        const angle = Math.random()*Math.PI*2;
+                        x=Math.cos(angle)*dr; z=Math.sin(angle)*dr;
+                        y=Math.sin(angle*1.5)*(dr*0.015)+(Math.random()-0.5)*0.15;
+                        const t=1.0-Math.pow((dr-4.5)/18,0.5);
+                        if(t>0.85){r=1.0;g=0.95;b=0.8;}
+                        else if(t>0.60){r=1.0;g=0.55+t*0.5;b=0.05;}
+                        else if(t>0.35){r=1.0;g=0.2+t*0.4;b=0.0;}
+                        else{r=0.5+t*0.6;g=0.05;b=0.0;}
+                    } else if (rand < 0.80) {
+                        const ri=Math.floor(Math.random()*4);
+                        const rr=5.2+ri*0.4, angle=Math.random()*Math.PI*2;
+                        const px=Math.cos(angle)*rr, py=Math.sin(angle)*rr;
+                        const tX=[0,Math.PI/2,Math.PI/4,-Math.PI/3][ri];
+                        const tZ=[Math.PI/2,0,Math.PI/3,Math.PI/5][ri];
+                        const rx1=px, ry1=py*Math.cos(tX), rz1=py*Math.sin(tX);
+                        x=rx1*Math.cos(tZ)-ry1*Math.sin(tZ);
+                        y=rx1*Math.sin(tZ)+ry1*Math.cos(tZ); z=rz1;
+                        r=0.6+Math.random()*0.15; g=Math.random()*0.05; b=Math.random()*0.03;
+                    } else if (rand < 0.91) {
+                        const js=Math.random()>0.5?1:-1, jt=Math.pow(Math.random(),0.4)*22;
+                        const ca=Math.random()*Math.PI*2, sp=jt*0.045+Math.random()*0.2;
+                        x=Math.cos(ca)*sp; z=Math.sin(ca)*sp; y=js*jt;
+                        const jb=Math.max(0,1.0-jt/22);
+                        r=0.3+jb*0.4; g=0.5+jb*0.4; b=1.0;
+                    } else {
+                        const da=Math.random()*Math.PI*2, ddr=22+Math.random()*8;
+                        x=Math.cos(da)*ddr+(Math.random()-0.5)*2;
+                        z=Math.sin(da)*ddr+(Math.random()-0.5)*2;
+                        y=(Math.random()-0.5)*1.5;
+                        r=0.25+Math.random()*0.2; g=0.04; b=0.0;
+                    }
+
+                } else if (type === 'sun') {
+                    const radius = Math.pow(Math.random(),0.5)*10;
+                    const theta  = Math.random()*Math.PI*2;
+                    const phi    = Math.acos(2*Math.random()-1);
+                    x = radius*Math.sin(phi)*Math.cos(theta);
+                    y = radius*Math.sin(phi)*Math.sin(theta);
+                    z = radius*Math.cos(phi);
+                    const bv = Math.sin(Math.abs(y/10)*20)*0.1;
+                    r = Math.min(1.0, 1.0+bv);
+                    g = Math.min(1.0, 0.8+bv);
+                    b = Math.min(1.0, 0.3+bv);
+                }
+
+                positions[i3] = x;
+                positions[i3+1] = y;
+                positions[i3+2] = z;
+                colors[i3] = r;
+                colors[i3+1] = g;
+                colors[i3+2] = b;
+            }
+            return {positions, colors};
+        }
+
+        function initScene() {
+            scene    = new THREE.Scene();
+            camera   = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({antialias: true});
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            document.getElementById('hologram-screen').appendChild(renderer.domElement);
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth/window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+
+        function cleanupScene() {
+            if(particles){scene.remove(particles);particles=null;}
+            if(geometry){geometry.dispose();geometry=null;}
+            if(material){material.dispose();material=null;}
+            ['blackholeSphere','blackholeGlow'].forEach(name => {
+                const obj=scene.getObjectByName(name);
+                if(obj){scene.remove(obj);if(obj.geometry)obj.geometry.dispose();if(obj.material)obj.material.dispose();}
+            });
+        };
+
+        function createParticleSystem(templateType) {
+            cleanupScene();
+            const {positions,colors} = generateTemplatePositions(templateType);
+            geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions,3));
+            geometry.setAttribute('color',    new THREE.BufferAttribute(colors,3));
+            const baseSize = templateType==='blackhole' ? 0.08 : 0.5;
+            material = new THREE.PointsMaterial({
+                size: cfg.particleScale*baseSize, vertexColors: true, sizeAttenuation: true,
+                depthTest: true, depthWrite: templateType!=='blackhole',
+                transparent: templateType==='blackhole', opacity: 0.9
+            });
+            particles = new THREE.Points(geometry, material);
+            if(templateType==='saturn')    particles.rotation.x = 25*(Math.PI/180);
+            if(templateType==='blackhole') particles.rotation.x = 15*(Math.PI/180);
+            scene.add(particles);
+            if(templateType==='blackhole'){
+                const sphere = new THREE.Mesh(new THREE.SphereGeometry(2.8,64,64), new THREE.MeshBasicMaterial({color:0x000000}));
+                sphere.name='blackholeSphere'; scene.add(sphere);
+                const glow = new THREE.Mesh(new THREE.SphereGeometry(3.2,64,64), new THREE.MeshBasicMaterial({color:0xff5500,transparent:true,opacity:0.15,side:THREE.BackSide}));
+                glow.name='blackholeGlow'; scene.add(glow);
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if(!document.getElementById('hologram-screen').classList.contains('visible')) return;
+            if(material){const bs=cfg.template==='blackhole'?0.08:0.5; material.size=cfg.particleScale*bs;}
+            if(particles) particles.rotation.y += 0.003*cfg.rotationSpeed;
+            if(!isDragging){
+                rotationY+=velocityY; rotationX+=velocityX;
+                velocityX*=0.92; velocityY*=0.92;
+                if(Math.abs(velocityX)<0.0001)velocityX=0;
+                if(Math.abs(velocityY)<0.0001)velocityY=0;
+            }
+            rotationX = Math.max(-Math.PI/2+0.01, Math.min(Math.PI/2-0.01, rotationX));
+            camera.position.x = cameraRadius*Math.cos(rotationX)*Math.sin(rotationY);
+            camera.position.z = cameraRadius*Math.cos(rotationX)*Math.cos(rotationY);
+            camera.position.y = cameraRadius*Math.sin(rotationX);
+            camera.lookAt(0,0,0); camera.up.set(0,1,0);
+            renderer.render(scene, camera);
+        }
+
+        function setupUI() {
+            document.getElementById('template').addEventListener('change', (e) => {
+                cfg.template=e.target.value; createParticleSystem(cfg.template);
+            });
+            document.getElementById('particleScale').addEventListener('input', (e) => {
+                cfg.particleScale=parseFloat(e.target.value);
+                document.getElementById('scaleValue').textContent=e.target.value;
+            });
+            document.getElementById('rotationSpeed').addEventListener('input', (e) => {
+                cfg.rotationSpeed=parseFloat(e.target.value);
+                document.getElementById('speedValue').textContent=e.target.value;
+            });
+        }
+
+        function setupMouseControls() {
+            const canvas = renderer.domElement;
+            canvas.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                cameraRadius *= e.deltaY>0 ? 1.1 : 0.9;
+                cameraRadius = Math.max(5, Math.min(200, cameraRadius));
+            }, {passive:false});
+            canvas.addEventListener('mousedown', (e) => {isDragging=true; previousMousePosition={x:e.clientX,y:e.clientY};});
+            canvas.addEventListener('mousemove', (e) => {
+                if(!isDragging) return;
+                const dx=e.clientX-previousMousePosition.x, dy=e.clientY-previousMousePosition.y;
+                rotationY+=dx*0.005; rotationX+=dy*0.005;
+                velocityY=dx*0.005; velocityX=dy*0.005;
+                previousMousePosition={x:e.clientX,y:e.clientY};
+            });
+            canvas.addEventListener('mouseup',    ()=>{isDragging=false;});
+            canvas.addEventListener('mouseleave', ()=>{isDragging=false;});
+            canvas.addEventListener('touchstart', (e)=>{
+                if(e.touches.length===1){isDragging=true;previousMousePosition={x:e.touches[0].clientX,y:e.touches[0].clientY};e.preventDefault();}
+            },{passive:false});
+            canvas.addEventListener('touchmove', (e)=>{
+                if(!isDragging||e.touches.length!==1)return;
+                const dx=e.touches[0].clientX-previousMousePosition.x, dy=e.touches[0].clientY-previousMousePosition.y;
+                rotationY+=dx*0.005; rotationX+=dy*0.005;
+                velocityY=dx*0.005; velocityX=dy*0.005;
+                previousMousePosition={x:e.touches[0].clientX,y:e.touches[0].clientY};
+                e.preventDefault();
+            },{passive:false});
+            canvas.addEventListener('touchend', ()=>{isDragging=false;});
+        }
+    </script>
+</body>
+</html>
